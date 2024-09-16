@@ -20,7 +20,7 @@ class AMCLSubscriber(Node):
     def get_pose(self,msg):      # 姿勢の取得
         pos = msg.position
         q = msg.orientation
-        (roll, pitch, yaw) = tf_trans.euler_from_quaternion((q.x, q.y, q.z, q.w))
+        roll, pitch, yaw = tf_trans.euler_from_quaternion((q.x, q.y, q.z, q.w))
         return pos.x, pos.y, yaw
 
     def amcl_cb(self, msg):         # AMCLのコールバック
