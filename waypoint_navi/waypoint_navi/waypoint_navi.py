@@ -13,8 +13,8 @@ class WayPointNavi(Node):
     def __init__(self):
         super().__init__('waypoint_navi')  # ノードの初期化
         self.wp_num = 0                    # ウェイポイント番号の初期化
-        self.init_pose = [-2.0, -0.5, 0.0]  # 初期姿勢（x, y, yaw）
-        self.navigator = BasicNavigator()  # BasicNavigatorオブジェクトの作成
+        self.init_pose = [-2.0, -0.5, 0.0] # 初期姿勢（x, y, yaw）
+        self.navigator = BasicNavigator()  # BasicNavigatorインスタンスの作成
         
     def do_navigation(self):  ### ナビゲーションを実行するメソッド ###
         way_point = [         # ウェイポイントのリスト
@@ -23,7 +23,7 @@ class WayPointNavi(Node):
         ]        
         self.set_init_pose()  # 初期姿勢の設定 
         self.navigator.waitUntilNav2Active()            # Nav2がアクティブになるまで待機
-        while rclpy.ok():     # ナビゲーションのループ 
+        while rclpy.ok():     # ナビゲーションのメインループ 
             if way_point[self.wp_num][0] == 999.9:      # 終了条件のチェック
                 self.get_logger().info('ナビゲーションを終了します．')
                 sys.exit(0)                             # プログラムの正常終了
