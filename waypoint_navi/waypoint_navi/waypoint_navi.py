@@ -44,11 +44,10 @@ class WayPointNavi(Node):
             if feedback:
                 self.get_logger().info(f"残り：{feedback.distance_remaining:.2f}[m]")
                 self.get_logger().info(f"経過時間：{feedback.navigation_time.sec}[s]") 
-                if feedback.navigation_time.sec > 25:
-                    self.navigator.cancelTask()    
+                if feedback.navigation_time.sec > 99: # ナビゲーションの経過時間が超過すると 
+                    self.navigator.cancelTask()       # タスクをキャンセル
             time.sleep(0.5)                           # フィードバックを取得する間隔
-        result = self.navigator.getResult()           # 結果の取得
-        print(f"result={result}")
+        result = self.navigator.getResult()           # 結果の取得        
         if result == TaskResult.SUCCEEDED:            # 成功した場合
             self.get_logger().info(f'WP{self.wp_num + 1}に着きました．')
             self.wp_num += 1                          # 次のウェイポイントに進む
