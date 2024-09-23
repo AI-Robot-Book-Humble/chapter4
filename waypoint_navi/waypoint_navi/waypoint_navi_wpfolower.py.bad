@@ -1,0 +1,107 @@
+#! /usr/bin/env python3
+# -*- coding: utf-8 -*-
+#import sys, time
+#from math import pi
+#import rclpy
+#from rclpy.node import Node
+#from rclpy.action import ActionClient
+#from action_msgs.msg import GoalStatus
+#from rclpy.duration import Duration
+#from geometry_msgs.msg import Pose, PoseStamped, PoseWithCovarianceStamped, \
+#  Point, Quaternion, Twist
+#import tf_transformations
+#from tf_transformations import euler_from_quaternion
+#from nav2_msgs.action import NavigateToPose
+
+import rclpy  # ROS2のPythonクライアントライブラリ
+from rclpy.node import Node  # ROS2のノードクラス
+import sys  # システム関連のモジュール（プログラム終了など）
+import time  # タイミング制御のためのモジュール
+from math import pi  # 円周率や角度変換に使う
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped  # 位置や姿勢に関するメッセージ
+from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult  # Nav2 Simple Commander用
+import tf_transformations  # 回転の変換を行うライブラリ
+
+class WayPointNavi(Node):
+    def __init__(self):
+        super().__init__('waypoint_navi')  # ノードの初期化
+        self.wp_num = 0  # ウェイポイント番号の初期化
+        self.init_pos = [-2.0, -0.5]  # 初期位置のx, y座標
+        self.navigator = BasicNavigator()  # BasicNavigatorオブジェクトの作成
+        self.poses = []
+
+    def do_navigation(self):  # ナビゲーションの実行        
+        way_point = [  # ウェイポイントのリスト
+            [1.2, -1.5, pi/2], [1.0, 0.5, pi], [-4.0, 0.8, pi/2], [-4.0, 3.9, pi], 
+            [-6.5, 4.0, -pi/2], [-6.5, -3.0, pi/2], [999.9, 0.0, 0.0] 
+        ]        
+        self.set_initial_pose()  # 初期位置の設定
+        self.set_waypoints(way_point) # ウエイポイントの設定
+
+        while rclpy.ok(): # ナビゲーションのループ 
+            if way_point[self.wp_num][0] == 999.9:  # 終了条件のチェック
+                self.get_logger().info('ナビゲーションを終了します．')
+                sys.exit()  # プログラムを終了
+            elif self.wp_num == 3:  # 特定のウェイポイントに到達したときにタスクをキャンセル
+                self.navigator.cancelTask()
+            #pose = self.set_pose(way_point[self.wp_num])  # 現在のウェイポイントの姿勢を設定
+            #self.send_goal(pose)  # ゴールを送信
+            navigator.followWaypoints(self.poses)
+            time.sleep(1)  
+
+    def set_initial_pose(self):  # 初期位置の設定        
+        initial_pose = PoseStamped()  # 初期位置用のインスタンス
+        initial_pose.pose.position.x = self.init_pos[0]
+        initial_pose.pose.position.y = self.init_pos[1]
+        initial_pose.pose.orientation.z = 1.0  # 初期の方向（クォータニオン形式）
+        initial_pose.pose.orientation.w = 0.0  # 初期の方向（クォータニオン形式）
+        initial_pose.header.frame_id = 'map'  # フレームIDの設定
+        initial_pose.header.stamp = self.navigator.get_clock().now().to_msg()  # 現在時刻
+        self.get_logger().info('初期位置を設定します．')
+        self.navigator.setInitialPose(initial_pose)  # Nav2に初期位置を設定
+        self.navigator.lifecycleStartup()  # Nav2のシステムを起動
+        self.navigator.waitUntilNav2Active()  # Nav2がアクティブになるまで待機
+
+    def send_goal(self, pose):  # ゴールの送信
+        self.get_logger().info("WP{}({},{})に行きます．".format(self.wp_num + 1,
+                          pose.pose.position.x, pose.pose.position.y))
+        #self.navigator.goToPose(pose)  # ゴールを指定してナビゲーションを開始
+        self.navigator.followWaypoints(pose)  # ゴールを指定してナビゲーションを開始
+        while not self.navigator.isTaskComplete():  # タスクの完了を待つループ
+            feedback = self.navigator.getFeedback()  # フィードバックの取得
+            if feedback:
+                self.get_logger().info("残り{:.2f}[m]".format(feedback.distance_remaining))
+            time.sleep(0.5)  # フィードバックを取得する間隔
+        result = self.navigator.getResult()  # 結果の取得
+        if result == TaskResult.SUCCEEDED:
+            self.get_logger().info('WP{}に着きました．'.format(self.wp_num + 1))
+        elif result == TaskResult.CANCELED:
+            self.get_logger().info('WP{}はキャンセルされました．'.format(self.wp_num + 1))
+        else:
+            self.get_logger().info('WP{}は失敗しました．'.format(self.wp_num + 1))
+        self.wp_num += 1  # 次のウェイポイントに進む
+
+    def set_waypoints(self, wp_poses):  # 姿勢の設定  
+        for wp_pose in wp_poses:
+            goal_pose = PoseStamped()  # ウェイポイントの姿勢を設定
+            goal_pose.header.stamp = self.navigator.get_clock().now().to_msg()  # 現在時間
+            goal_pose.header.frame_id = "map"  # フレームIDの設定
+            goal_pose.pose.position.x = wp_pose[0]  # x座標
+            goal_pose.pose.position.y = wp_pose[1]  # y座標
+            q = tf_transformations.quaternion_from_euler(0, 0, wp_pose[2])  # 角度の変換
+            goal_pose.pose.orientation.x, goal_pose.pose.orientation.y, \
+            goal_pose.pose.orientation.z, goal_pose.pose.orientation.w = q
+        self.poses.append(goal_pose)
+
+def main(args=None):
+  rclpy.init(args=args)
+  waypoint_navi = WayPointNavi()
+  waypoint_navi.do_navigation()
+  rclpy.spin(waypoint_navi)
+  waypoint.destroy_node()
+  rclpy.shutdown()
+
+    
+if __name__ == '__main__':
+    main()
+

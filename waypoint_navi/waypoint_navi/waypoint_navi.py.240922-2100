@@ -16,50 +16,49 @@ class WayPointNavi(Node):
         self.init_pose = [-2.0, -0.5, 0.0]  # 初期姿勢（x, y, yaw）
         self.navigator = BasicNavigator()  # BasicNavigatorオブジェクトの作成
         
-    def do_navigation(self):  ### ナビゲーションを実行するメソッド ###
+    def do_navigation(self):  """ ナビゲーションを実行するメソッド """        
         way_point = [         # ウェイポイントのリスト
             [1.2, -1.5, pi/2], [1.0, 0.5, pi], [-4.0, 0.8, pi/2], [-4.0, 3.9, pi], 
             [-6.5, 4.0, -pi/2], [-6.5, -3.0, pi/2], [999.9, 0.0, 0.0] 
         ]        
         self.set_init_pose()  # 初期姿勢の設定 
-        self.navigator.waitUntilNav2Active()            # Nav2がアクティブになるまで待機
+        self.navigator.waitUntilNav2Active()          # Nav2がアクティブになるまで待機
         while rclpy.ok():     # ナビゲーションのループ 
-            if way_point[self.wp_num][0] == 999.9:      # 終了条件のチェック
+            if way_point[self.wp_num][0] == 999.9:  # 終了条件のチェック
                 self.get_logger().info('ナビゲーションを終了します．')
-                sys.exit(0)                             # プログラムの正常終了
+                sys.exit()          # プログラムを終了
+            elif self.wp_num == 3:  # 特定のウェイポイントに到達したときにタスクをキャンセル
+                self.navigator.cancelTask()
             pose_msg = self.to_pose_msg(way_point[self.wp_num])  # 現在のウェイポイントの姿勢を設定
-            result = self.navigate_to_goal(pose_msg)    # ゴールへナビゲーション
+            self.send_goal(pose_msg)    # ゴールを送信
+            self.navigator.goToPose(pose_msg)
             time.sleep(1)  
 
-    def set_init_pose(self):  ### Nav2に初期姿勢を設定するメソッド ### 
+    def set_init_pose(self):  """ Nav2に初期姿勢を設定するメソッド """ 
         init_pose_msg = self.to_pose_msg(self.init_pose)   # メッセージ型に変換     
         self.get_logger().info('初期位置を設定します．')
-        self.navigator.setInitialPose(init_pose_msg)       # Nav2に初期姿勢を設定        
+        self.navigator.setInitialPose(init_pose_msg)       # Nav2に初期姿勢を設定
+        
 
-    def navigate_to_goal(self, goal_pose):  ### ゴールへナビゲーション ###
-        self.get_logger().info(f"WP{self.wp_num + 1}({goal_pose.pose.position.x},{goal_pose.pose.position.y})に行きます．")
+    def send_goal(self, goal_pose):  """ ゴールの送信 """
+        self.get_logger().info("WP{}({},{})に行きます．".format(self.wp_num + 1,
+                          goal_pose.pose.position.x, goal_pose.pose.position.y))
         self.navigator.goToPose(goal_pose)            # ゴールを指定してナビゲーションを開始
         while not self.navigator.isTaskComplete():    # タスクの完了を待つループ
             feedback = self.navigator.getFeedback()   # フィードバックの取得
             if feedback:
-                self.get_logger().info(f"残り：{feedback.distance_remaining:.2f}[m]")
-                self.get_logger().info(f"経過時間：{feedback.navigation_time.sec}[s]") 
-                if feedback.navigation_time.sec > 25:
-                    self.navigator.cancelTask()    
+                self.get_logger().info("残り{:.2f}[m]".format(feedback.distance_remaining))
             time.sleep(0.5)                           # フィードバックを取得する間隔
         result = self.navigator.getResult()           # 結果の取得
-        print(f"result={result}")
         if result == TaskResult.SUCCEEDED:            # 成功した場合
-            self.get_logger().info(f'WP{self.wp_num + 1}に着きました．')
-            self.wp_num += 1                          # 次のウェイポイントに進む
+            self.get_logger().info('WP{}に着きました．'.format(self.wp_num + 1))
         elif result == TaskResult.CANCELED:           # キャンセルされた場合
-            self.get_logger().info(f"WP{self.wp_num + 1}はキャンセルされました．")
-            self.wp_num += 1                          # 一つ飛ばして次のウェイポイントに進む
+            self.get_logger().info('WP{}はキャンセルされました．'.format(self.wp_num + 1))
         else:                                         # 失敗した場合
-            self.get_logger().info(f'WP{self.wp_num + 1}は失敗しました．')
-            sys.exit(1)                               # プログラムの異常終了        
+            self.get_logger().info('WP{}は失敗しました．'.format(self.wp_num + 1))
+        self.wp_num += 1                              # 次のウェイポイントに進む
     
-    def to_pose_msg(self, pose):  ### メッセージ型に変換するメソッド ###  
+    def to_pose_msg(self, pose):  """ メッセージ型に変換するメソッド """  
         pose_msg = PoseStamped()               # ウェイポイントの姿勢を設定
         pose_msg.header.stamp = self.navigator.get_clock().now().to_msg()  # 現在時間
         pose_msg.header.frame_id = "map"       # フレームIDの設定
