@@ -25,7 +25,7 @@ ros2 run waypoint_navi waypoint_navi
 - 2024-09-23: 初期版
 
 ## ライセンス
-Copyright (c) 2024, Kosei Demura  
+Copyright (c) 2025, Kosei Demura  
 All rights reserved. This project is licensed under the Apache License 2.0 license found in the LICENSE file in the root directory of this project.
 
 
