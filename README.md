@@ -6,7 +6,7 @@ ROS 2とPythonで作って学ぶAIロボット入門 改訂第2版（出村・�
 - **[amcl_subscriber](amcl_subscriber)**: /amclと/odomをサブスクライブするパッケージ
 - **[happy_lidar](happy_lidar)**: シンプルなLidarパッケージとドアオープンのサンプル
 - **[happy_move](happy_move)**: シンプルな移動パッケージ
-- **[happy_teleop](happy_teleop)**: 自作遠隔操作パッケー
+- **[happy_teleop](happy_teleop)**: 自作遠隔操作パッケージ
 - **[map](map)**: 地図ファイルを格納するディレクトリ
 - **[path_planning](path_planning)**: 経路計画のサンプルプログラム
 - **[waypoint_navi](waypoint_navi)**: ウェイポイントナビゲーションのサンプルパッケージ
