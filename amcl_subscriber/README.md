@@ -6,7 +6,7 @@
 
 ## インストール
 Chapter4のパッケージは全部まとめてインストール・ビルドをします．
-- [第4章 インストール](https://github.com/AI-Robot-Book/chapter4)を参照してください．
+- [第4章 インストール](https://github.com/AI-Robot-Book-Humble/chapter4)を参照してください．
 
 
 ## 実行
